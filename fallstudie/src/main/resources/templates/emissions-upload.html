@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>CO₂ CSV-Upload – Like Hero To Zero</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root {
+            --primary: #1e272e;
+            --accent: #3498db;
+            --background: #121212;
+            --card: #1e1e1e;
+            --text: #f0f0f0;
+            --text-muted: #888;
+            --border-radius: 10px;
+            --success: #2ecc71;
+            --error: #e74c3c;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Segoe UI", sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            margin: 0;
+        }
+
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        nav {
+            margin-top: 1rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        nav a:hover {
+            text-decoration: underline;
+        }
+
+        .auth-status {
+            margin-top: 1rem;
+            font-size: 0.95rem;
+        }
+
+        .auth-status a {
+            color: var(--error);
+            margin-left: 1rem;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .auth-status a:hover {
+            text-decoration: underline;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 2rem auto;
+            background: var(--card);
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        }
+
+        h2 {
+            color: var(--accent);
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            text-align: center;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #444;
+            border-radius: var(--border-radius);
+            background: #2a2a2a;
+            color: var(--text);
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        input[type="file"]::file-selector-button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+        }
+
+        input[type="file"]::file-selector-button:hover {
+            background: #2778c4;
+        }
+
+        #feedback {
+            margin-top: 1.5rem;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .success {
+            color: var(--success);
+        }
+
+        .error {
+            color: var(--error);
+        }
+    </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🌍 Like Hero To Zero</h1>
+    <nav>
+      <!-- Für alle sichtbar -->
+      <a href="/">🏠 Home</a>
+      <a href="/emissions/view">📊 Daten</a>
+
+      <!-- Für Scientist und Admin -->
+      <span sec:authorize="hasAnyRole('SCIENTIST', 'ADMIN')">
+        <a href="/emissions/form">➕ Eintrag</a>
+        <a href="/emissions/upload">📁 CSV-Import</a>
+        <a href="/aufgabenstellung">📘 Aufgabe</a>
+      </span>
+
+      <!-- Nur Admin -->
+      <a href="/admin/review" sec:authorize="hasRole('ADMIN')">🛡️ Admin: Datenprüfung</a>
+      <a href="/admin/users" sec:authorize="hasRole('ADMIN')">👥 Benutzerverwaltung</a>
+    </nav>
+  </div>
+  <div>
+    <div sec:authorize="isAuthenticated()" class="auth-status">
+      ✅ Eingeloggt als <strong th:text="${#authentication.name}">Username</strong>
+      <a href="/logout">🚪 Logout</a>
+    </div>
+    <div sec:authorize="!isAuthenticated()" class="auth-status">
+      <a href="/login">🔐 Login</a>
+    </div>
+  </div>
+</header>
+
+
+
+<div class="container">
+    <h2>📁 CO₂-Daten per CSV importieren</h2>
+
+    <input type="file" id="csvInput" accept=".csv" />
+
+    <p id="feedback"></p>
+</div>
+
+<script>
+    document.getElementById("csvInput").addEventListener("change", async function () {
+        const file = this.files[0];
+        if (!file) return;
+
+        const text = await file.text();
+        const rows = text.split("\n").slice(1); // Erste Zeile = Header
+        const data = [];
+
+        for (const row of rows) {
+            const cols = row.split(",");
+            const country = cols[0]?.trim();
+            const year = parseInt(cols[1]);
+            const co2 = parseFloat(cols[7]); // Spalte 'co2'
+
+            if (country && year > 0 && !isNaN(co2)) {
+                data.push({ country, year, co2kt: co2 });
+            }
+        }
+
+        const feedback = document.getElementById("feedback");
+
+        if (data.length === 0) {
+            feedback.innerText = "❌ Keine gültigen Daten erkannt.";
+            feedback.className = "error";
+            return;
+        }
+
+        try {
+            const res = await fetch("/api/emissions/bulk", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data)
+            });
+
+            if (res.ok) {
+                feedback.innerText = `✅ Erfolgreich ${data.length} Einträge importiert.`;
+                feedback.className = "success";
+            } else {
+                feedback.innerText = "❌ Fehler beim Import.";
+                feedback.className = "error";
+            }
+        } catch (err) {
+            feedback.innerText = "❌ Netzwerkfehler.";
+            feedback.className = "error";
+        }
+    });
+</script>
+
+</body>
+</html>

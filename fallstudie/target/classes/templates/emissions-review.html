@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Review: CO₂-Einträge prüfen</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --primary: #1e272e;
+      --accent: #3498db;
+      --success: #2ecc71;
+      --error: #e74c3c;
+      --background: #121212;
+      --card: #1f1f1f;
+      --text: #f0f0f0;
+      --border-radius: 8px;
+    }
+
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: var(--background);
+      color: var(--text);
+      margin: 0;
+    }
+
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.4rem;
+    }
+
+    nav a {
+      color: white;
+      margin-left: 1rem;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    nav a:hover {
+      text-decoration: underline;
+    }
+
+    .container {
+      padding: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h2 {
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+    }
+
+    #entryCount {
+      font-weight: bold;
+      margin-bottom: 1rem;
+    }
+
+    #approveAllBtn {
+      margin-bottom: 1.5rem;
+      background: var(--accent);
+      border-radius: var(--border-radius);
+      padding: 0.5rem 1.25rem;
+      border: none;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    #approveAllBtn:hover {
+      background: #2d7abf;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--card);
+      border-radius: var(--border-radius);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    th, td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid #333;
+      text-align: left;
+    }
+
+    th {
+      background-color: var(--primary);
+      color: white;
+    }
+
+    tr:hover {
+      background-color: #1b1b1b;
+    }
+
+    button {
+      padding: 0.4rem 0.9rem;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-right: 0.3rem;
+    }
+
+    .approve-btn {
+      background: var(--success);
+      color: white;
+    }
+
+    .approve-btn:hover {
+      background: #229954;
+    }
+
+    .reject-btn {
+      background: var(--error);
+      color: white;
+    }
+
+    .reject-btn:hover {
+      background: #c0392b;
+    }
+
+    .footer {
+      margin-top: 2rem;
+      font-size: 0.85rem;
+      color: #888;
+      text-align: center;
+    }
+
+    .footer code {
+      background: #2c2c2c;
+      padding: 2px 4px;
+      border-radius: 4px;
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🌍 Like Hero To Zero</h1>
+    <nav>
+      <!-- Für alle sichtbar -->
+      <a href="/">🏠 Home</a>
+      <a href="/emissions/view">📊 Daten</a>
+
+      <!-- Für Scientist und Admin -->
+      <span sec:authorize="hasAnyRole('SCIENTIST', 'ADMIN')">
+        <a href="/emissions/form">➕ Eintrag</a>
+        <a href="/emissions/upload">📁 CSV-Import</a>
+        <a href="/aufgabenstellung">📘 Aufgabe</a>
+      </span>
+
+      <!-- Nur Admin -->
+      <a href="/admin/review" sec:authorize="hasRole('ADMIN')">🛡️ Admin: Datenprüfung</a>
+      <a href="/admin/users" sec:authorize="hasRole('ADMIN')">👥 Benutzerverwaltung</a>
+    </nav>
+  </div>
+  <div>
+    <div sec:authorize="isAuthenticated()" class="auth-status">
+      ✅ Eingeloggt als <strong th:text="${#authentication.name}">Username</strong>
+      <a href="/logout">🚪 Logout</a>
+    </div>
+    <div sec:authorize="!isAuthenticated()" class="auth-status">
+      <a href="/login">🔐 Login</a>
+    </div>
+  </div>
+</header>
+
+
+
+<div class="container">
+  <h2>⏳ Ungeprüfte CO₂-Einträge</h2>
+
+  <p id="entryCount">🔍 <span id="countSpan" th:text="${pendingEntries.size()}">0</span> ausstehende Einträge</p>
+
+  <button id="approveAllBtn">✅ Alle Einträge freigeben</button>
+
+  <table>
+    <thead>
+    <tr>
+      <th>Land</th>
+      <th>Jahr</th>
+      <th>CO₂ (kt)</th>
+      <th>Eingereicht von</th>
+      <th>Aktion</th>
+    </tr>
+    </thead>
+    <tbody id="tableBody">
+    <tr th:each="entry : ${pendingEntries}" th:attr="data-id=${entry.id}">
+      <td th:text="${entry.country}">Deutschland</td>
+      <td th:text="${entry.year}">2022</td>
+      <td th:text="${entry.co2kt}">753.123</td>
+      <td th:text="${entry.submittedBy}">MaxMuster</td>
+      <td>
+        <button class="approve-btn" th:attr="data-id=${entry.id}">✅ Freigeben</button>
+        <button class="reject-btn" th:attr="data-id=${entry.id}">❌ Ablehnen</button>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+
+  <p class="footer">Nur sichtbar für Nutzer mit Rolle <code>ADMIN</code>.</p>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const countSpan = document.getElementById("countSpan");
+    const tableBody = document.getElementById("tableBody");
+
+    function updateCounter() {
+      const rows = tableBody.querySelectorAll("tr");
+      countSpan.textContent = rows.length;
+    }
+
+    async function handleAction(id, method, url, successMessage) {
+      try {
+        const res = await fetch(url, { method, headers: { "X-Requested-With": "XMLHttpRequest" } });
+        if (res.ok) {
+          alert(successMessage);
+          const row = tableBody.querySelector(`tr[data-id='${id}']`);
+          if (row) row.remove();
+          updateCounter();
+        } else {
+          const err = await res.text();
+          alert("❌ Fehler:\n" + err);
+        }
+      } catch (err) {
+        alert("❌ Netzwerkfehler.");
+        console.error(err);
+      }
+    }
+
+    document.querySelectorAll(".approve-btn").forEach(button => {
+      button.addEventListener("click", () => {
+        const id = button.getAttribute("data-id");
+        if (id && confirm("Willst du diesen Eintrag wirklich freigeben?")) {
+          handleAction(id, "POST", "/admin/review/approve/" + id, "✅ Eintrag wurde freigegeben.");
+        }
+      });
+    });
+
+    document.querySelectorAll(".reject-btn").forEach(button => {
+      button.addEventListener("click", () => {
+        const id = button.getAttribute("data-id");
+        if (id && confirm("Willst du diesen Eintrag wirklich löschen?")) {
+          handleAction(id, "DELETE", "/admin/review/reject/" + id, "🚫 Eintrag wurde gelöscht.");
+        }
+      });
+    });
+
+    document.getElementById("approveAllBtn").addEventListener("click", async () => {
+      const confirmed = confirm("⚠️ Willst du wirklich ALLE Einträge freigeben?");
+      if (!confirmed) return;
+
+      try {
+        const res = await fetch("/admin/review/approve/all", {
+          method: "POST",
+          headers: { "X-Requested-With": "XMLHttpRequest" }
+        });
+
+        const result = await res.json();
+
+        if (res.ok) {
+          alert(result.message || "✅ Alle Einträge wurden freigegeben.");
+          const tbody = document.querySelector("tbody");
+          if (tbody) tbody.innerHTML = "";
+          const entryCount = document.getElementById("entryCount");
+          if (entryCount) entryCount.textContent = "🔍 0 ausstehende Einträge auf dieser Seite.";
+        } else {
+          alert("❌ Fehler beim Freigeben:\n" + (result.message || ""));
+        }
+      } catch (err) {
+        alert("❌ Netzwerkfehler.");
+        console.error(err);
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

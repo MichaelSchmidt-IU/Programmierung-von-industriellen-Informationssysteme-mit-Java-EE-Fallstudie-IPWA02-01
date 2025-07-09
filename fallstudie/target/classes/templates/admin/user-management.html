@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <title>Benutzerverwaltung – Like Hero To Zero</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --primary: #1e272e;
+      --accent: #3498db;
+      --background: #121212;
+      --card: #1f1f1f;
+      --text: #f0f0f0;
+      --border-radius: 10px;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background-color: var(--background);
+      color: var(--text);
+      margin: 0;
+      padding: 2rem;
+    }
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+    nav {
+      margin-top: 1rem;
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    nav a {
+      color: white;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    nav a:hover {
+      text-decoration: underline;
+    }
+    h1 {
+      color: var(--accent);
+      margin-bottom: 2rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--card);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 2rem;
+    }
+    th, td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid #333;
+      text-align: left;
+    }
+    th {
+      background-color: var(--primary);
+      color: #fff;
+    }
+    tr:hover {
+      background-color: #2b2b2b;
+    }
+    form {
+      display: inline;
+    }
+    select, input[type="text"], input[type="password"], button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 0.5rem;
+      font-size: 0.9rem;
+    }
+    select, input[type="text"], input[type="password"] {
+      background: #2c3e50;
+      color: #f0f0f0;
+    }
+    button:hover {
+      background: #2980b9;
+    }
+    .delete-btn {
+      background: #e74c3c;
+    }
+    .delete-btn:hover {
+      background: #c0392b;
+    }
+    .footer {
+      margin-top: 3rem;
+      font-size: 0.85rem;
+      color: #888;
+      text-align: center;
+    }
+    .new-user-form {
+      background: var(--card);
+      padding: 1rem;
+      border-radius: var(--border-radius);
+      margin-bottom: 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+    }
+    .new-user-form label {
+      flex-basis: 140px;
+      font-weight: 600;
+    }
+    .new-user-form input,
+    .new-user-form select {
+      flex-grow: 1;
+      max-width: 200px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🌍 Like Hero To Zero</h1>
+    <nav>
+      <!-- Für alle sichtbar -->
+      <a href="/">🏠 Home</a>
+      <a href="/emissions/view">📊 Daten</a>
+
+      <!-- Für Scientist und Admin -->
+      <span sec:authorize="hasAnyRole('SCIENTIST', 'ADMIN')">
+        <a href="/emissions/form">➕ Eintrag</a>
+        <a href="/emissions/upload">📁 CSV-Import</a>
+        <a href="/aufgabenstellung">📘 Aufgabe</a>
+      </span>
+
+      <!-- Nur Admin -->
+      <a href="/admin/review" sec:authorize="hasRole('ADMIN')">🛡️ Admin: Datenprüfung</a>
+      <a href="/admin/users" sec:authorize="hasRole('ADMIN')">👥 Benutzerverwaltung</a>
+    </nav>
+  </div>
+  <div>
+    <div sec:authorize="isAuthenticated()" class="auth-status">
+      ✅ Eingeloggt als <strong th:text="${#authentication.name}">Username</strong>
+      <a href="/logout">🚪 Logout</a>
+    </div>
+    <div sec:authorize="!isAuthenticated()" class="auth-status">
+      <a href="/login">🔐 Login</a>
+    </div>
+  </div>
+</header>
+
+<h1>🛡️ Benutzerverwaltung</h1>
+
+<!-- Formular zum Anlegen neuer Benutzer -->
+<form class="new-user-form" th:action="@{/admin/users/create}" method="post">
+  <label for="username">Benutzername:</label>
+  <input type="text" id="username" name="username" required />
+
+  <label for="password">Passwort:</label>
+  <input type="password" id="password" name="password" required />
+
+  <label for="role">Rolle:</label>
+  <select id="role" name="role" required>
+    <option value="USER">USER</option>
+    <option value="SCIENTIST">SCIENTIST</option>
+    <option value="ADMIN">ADMIN</option>
+  </select>
+
+  <label for="citizenship">Staatsbürgerschaft:</label>
+  <input type="text" id="citizenship" name="citizenship" />
+
+  <button type="submit">Neuen Benutzer anlegen</button>
+</form>
+
+<table>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Benutzername</th>
+      <th>Rollen</th>
+      <th>Staatsbürgerschaft</th>
+      <th>Aktionen</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr th:each="user : ${users}">
+      <td th:text="${user.id}">1</td>
+      <td th:text="${user.username}">admin</td>
+      <td th:text="${user.roles}">ADMIN</td>
+      <td th:text="${user.citizenship}">Deutschland</td>
+      <td>
+        <form th:action="@{/admin/users/change-role}" method="post">
+          <input type="hidden" name="userId" th:value="${user.id}" />
+          <select name="newRole">
+            <option value="USER" th:selected="${user.roles.contains('ROLE_USER')}">USER</option>
+            <option value="SCIENTIST" th:selected="${user.roles.contains('ROLE_SCIENTIST')}">SCIENTIST</option>
+            <option value="ADMIN" th:selected="${user.roles.contains('ADMIN')}">ADMIN</option>
+          </select>
+          <button type="submit">Rolle ändern</button>
+        </form>
+
+        <form th:action="@{/admin/users/delete}" method="post" 
+              onsubmit="return confirm('Soll dieser Benutzer wirklich gelöscht werden?');">
+          <input type="hidden" name="userId" th:value="${user.id}" />
+          <button type="submit" class="delete-btn">Löschen</button>
+        </form>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="footer">
+  Like Hero To Zero © 2025
+</div>
+
+</body>
+</html>

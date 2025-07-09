@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <meta charset="UTF-8">
+  <title>Login – Like Hero To Zero</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --primary: #1e272e;
+      --accent: #3498db;
+      --background: #121212;
+      --card: #1e1e1e;
+      --text: #f0f0f0;
+      --text-muted: #999;
+      --error: #e74c3c;
+      --border-radius: 10px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background-color: var(--background);
+      color: var(--text);
+      padding: 0;
+    }
+
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+
+    nav {
+      margin-top: 0.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    nav a {
+      color: white;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    nav a:hover {
+      text-decoration: underline;
+    }
+
+    .auth-status {
+      font-size: 0.95rem;
+      margin-top: 0.5rem;
+    }
+
+    .auth-status a {
+      color: var(--error);
+      margin-left: 1rem;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .auth-status a:hover {
+      text-decoration: underline;
+    }
+
+    .login-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 80vh;
+      padding: 3rem 1rem;
+    }
+
+    .login-box {
+      background-color: var(--card);
+      padding: 2rem;
+      border-radius: var(--border-radius);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .login-box h2 {
+      margin-bottom: 1.5rem;
+      color: var(--accent);
+      text-align: center;
+    }
+
+    label {
+      display: block;
+      margin: 0.5rem 0 0.25rem;
+      color: var(--text-muted);
+    }
+
+    input {
+      width: 100%;
+      padding: 0.6rem;
+      margin-bottom: 1rem;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: var(--border-radius);
+      font-size: 1rem;
+      color: var(--text);
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--accent);
+      background-color: #2f2f2f;
+    }
+
+    button {
+      width: 100%;
+      padding: 0.7rem;
+      background-color: var(--accent);
+      color: white;
+      border: none;
+      border-radius: var(--border-radius);
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    button:hover {
+      background-color: #2778c4;
+    }
+
+    .register-link {
+      display: block;
+      text-align: center;
+      margin-top: 1rem;
+      font-size: 0.95rem;
+      color: var(--text-muted);
+    }
+
+    .register-link a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .register-link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🌍 Like Hero To Zero</h1>
+    <nav>
+      <a href="/">🏠 Home</a>
+      <a href="/emissions/view">📊 Daten</a>
+      <a href="/emissions/form">➕ Eintrag</a>
+      <a href="/emissions/upload">📁 CSV-Import</a>
+      <a href="/aufgabenstellung">📘 Aufgabe</a>
+    </nav>
+  </div>
+  <div>
+    <div sec:authorize="isAuthenticated()" class="auth-status">
+      ✅ Eingeloggt als <strong th:text="${#authentication.name}"></strong>
+      <a href="/logout">🚪 Logout</a>
+    </div>
+    <div sec:authorize="!isAuthenticated()" class="auth-status">
+      <a href="/login">🔐 Login</a>
+    </div>
+  </div>
+</header>
+
+<div class="login-wrapper">
+  <div class="login-box">
+    <h2>🔐 Login</h2>
+    <form th:action="@{/login}" method="post">
+      <label for="username">Benutzername</label>
+      <input type="text" id="username" name="username" required>
+
+      <label for="password">Passwort</label>
+      <input type="password" id="password" name="password" required>
+
+      <button type="submit">Einloggen</button>
+    </form>
+    <p class="register-link">Noch kein Account? <a href="/register">Jetzt registrieren</a></p>
+  </div>
+</div>
+
+</body>
+</html>

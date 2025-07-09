@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Registrierung – Like Hero To Zero</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --primary: #1e272e;
+      --accent: #3498db;
+      --background: #121212;
+      --card: #1e1e1e;
+      --text: #f0f0f0;
+      --text-muted: #999;
+      --error: #e74c3c;
+      --border-radius: 10px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background-color: var(--background);
+      color: var(--text);
+      padding: 0;
+    }
+
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+
+    nav {
+      margin-top: 0.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    nav a {
+      color: white;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    nav a:hover {
+      text-decoration: underline;
+    }
+
+    .register-box {
+      max-width: 400px;
+      margin: auto;
+      padding: 2rem;
+      background: var(--card);
+      border-radius: var(--border-radius);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    h2 {
+      text-align: center;
+      color: var(--accent);
+      margin-bottom: 1.5rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.25rem;
+      color: #ccc;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.7rem;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      color: var(--text);
+      margin-bottom: 1rem;
+      border-radius: var(--border-radius);
+    }
+
+    button {
+      width: 100%;
+      padding: 0.7rem;
+      background: var(--accent);
+      border: none;
+      color: white;
+      font-weight: bold;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #2778c4;
+    }
+
+    .error {
+      color: var(--error);
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🌍 Like Hero To Zero</h1>
+    <nav>
+      <a href="/">🏠 Home</a>
+      <a href="/emissions/view">📊 Daten</a>
+      <a href="/emissions/form">➕ Eintrag</a>
+      <a href="/emissions/upload">📁 CSV-Import</a>
+      <a href="/aufgabenstellung">📘 Aufgabe</a>
+    </nav>
+  </div>
+  <div>
+    <div sec:authorize="isAuthenticated()" class="auth-status">
+      ✅ Eingeloggt als <strong th:text="${#authentication.name}"></strong>
+      <a href="/logout">🚪 Logout</a>
+    </div>
+    <div sec:authorize="!isAuthenticated()" class="auth-status">
+      <a href="/login">🔐 Login</a>
+    </div>
+  </div>
+</header>
+
+<div class="register-box">
+  <h2>📝 Registrieren</h2>
+
+  <form th:action="@{/register}" method="post" th:object="${user}">
+    <div th:if="${error}" class="error" th:text="${error}"></div>
+
+    <label for="username">Benutzername</label>
+    <input type="text" id="username" th:field="*{username}" required>
+
+    <label for="password">Passwort</label>
+    <input type="password" id="password" th:field="*{password}" required>
+
+    <label for="citizenship">Staatsbürgerschaft</label>
+    <select id="citizenship" th:field="*{citizenship}" required>
+      <option value="" disabled selected>Bitte auswählen</option>
+      <option th:each="land : ${laender}" th:value="${land}" th:text="${land}"></option>
+    </select>
+    
+
+    <button type="submit">Registrieren</button>
+  </form>
+</div>
+
+</body>
+</html>

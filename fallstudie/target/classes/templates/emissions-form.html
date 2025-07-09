@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <meta charset="UTF-8" />
+  <title>Meine CO₂-Einträge – Like Hero To Zero</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --primary: #1e272e;
+      --accent: #3498db;
+      --success: #2ecc71;
+      --error: #e74c3c;
+      --background: #121212;
+      --card: #1f1f1f;
+      --text: #f0f0f0;
+      --border-radius: 8px;
+    }
+
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: var(--background);
+      color: var(--text);
+      margin: 0;
+    }
+
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.4rem;
+    }
+
+    nav a {
+      color: white;
+      margin-left: 1rem;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    nav a:hover {
+      text-decoration: underline;
+    }
+
+    .auth-status {
+      margin-top: 0.5rem;
+      font-size: 0.95rem;
+    }
+
+    .auth-status a {
+      color: var(--error);
+      margin-left: 1rem;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .auth-status a:hover {
+      text-decoration: underline;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 2rem auto;
+      background: var(--card);
+      padding: 2rem;
+      border-radius: var(--border-radius);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    h2 {
+      margin-bottom: 1.5rem;
+      color: var(--accent);
+      font-size: 1.5rem;
+      text-align: center;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    label {
+      font-weight: 500;
+    }
+
+    input {
+      padding: 0.75rem;
+      border: 1px solid #444;
+      border-radius: var(--border-radius);
+      font-size: 1rem;
+      background: #2a2a2a;
+      color: var(--text);
+    }
+
+    input::placeholder {
+      color: #aaa;
+    }
+
+    button {
+      padding: 0.75rem;
+      background-color: var(--accent);
+      color: white;
+      font-weight: bold;
+      font-size: 1rem;
+      border: none;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #2d7abf;
+    }
+
+    #feedback {
+      margin-top: 1rem;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .success {
+      color: var(--success);
+    }
+
+    .error {
+      color: var(--error);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--card);
+      border-radius: var(--border-radius);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      margin-top: 2rem;
+    }
+
+    th, td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid #333;
+      text-align: left;
+    }
+
+    th {
+      background-color: var(--primary);
+      color: white;
+    }
+
+    tr:hover {
+      background-color: #1b1b1b;
+    }
+
+    .footer {
+      margin-top: 2rem;
+      font-size: 0.85rem;
+      color: #888;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🌍 Like Hero To Zero</h1>
+    <nav>
+      <!-- Für alle sichtbar -->
+      <a href="/">🏠 Home</a>
+      <a href="/emissions/view">📊 Daten</a>
+
+      <!-- Für Scientist und Admin -->
+      <span sec:authorize="hasAnyRole('SCIENTIST', 'ADMIN')">
+        <a href="/emissions/form">➕ Eintrag</a>
+        <a href="/emissions/upload">📁 CSV-Import</a>
+        <a href="/aufgabenstellung">📘 Aufgabe</a>
+      </span>
+
+      <!-- Nur Admin -->
+      <a href="/admin/review" sec:authorize="hasRole('ADMIN')">🛡️ Admin: Datenprüfung</a>
+      <a href="/admin/users" sec:authorize="hasRole('ADMIN')">👥 Benutzerverwaltung</a>
+    </nav>
+  </div>
+  <div>
+    <div sec:authorize="isAuthenticated()" class="auth-status">
+      ✅ Eingeloggt als <strong th:text="${#authentication.name}">Username</strong>
+      <a href="/logout">🚪 Logout</a>
+    </div>
+    <div sec:authorize="!isAuthenticated()" class="auth-status">
+      <a href="/login">🔐 Login</a>
+    </div>
+  </div>
+</header>
+
+
+
+<div class="container">
+  <h2>➕ Neuen CO₂-Eintrag erstellen</h2>
+
+  <form id="emissionForm">
+    <label for="country">Land</label>
+    <input type="text" id="country" name="country" placeholder="z. B. Deutschland" required />
+
+    <label for="year">Jahr</label>
+    <input type="number" id="year" name="year" placeholder="z. B. 2022" required />
+
+    <label for="co2kt">CO₂ in kt</label>
+    <input type="number" id="co2kt" name="co2kt" step="0.01" placeholder="z. B. 753.12" required />
+
+    <button type="submit">➕ Speichern</button>
+  </form>
+
+  <p id="feedback"></p>
+
+  <h2>⏳ Meine pending CO₂-Einträge</h2>
+
+  <p id="entryCount">
+    <span th:text="${pendingEntries != null ? pendingEntries.size() : 0}">0</span>
+    Einträge warten noch auf Freigabe.
+  </p>
+
+  <table th:if="${pendingEntries != null and !pendingEntries.isEmpty()}">
+    <thead>
+      <tr>
+        <th>Land</th>
+        <th>Jahr</th>
+        <th>CO₂ (kt)</th>
+        <th>Status</th>
+        <th>Eingereicht von</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="entry : ${pendingEntries}">
+        <td th:text="${entry.country}">Deutschland</td>
+        <td th:text="${entry.year}">2022</td>
+        <td th:text="${entry.co2kt}">753.123</td>
+        <td th:text="${entry.approved} ? 'APPROVED' : 'PENDING'">PENDING</td>
+        <td th:text="${entry.submittedBy}">MaxMuster</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p th:if="${pendingEntries == null or pendingEntries.isEmpty()}" style="margin-top: 2rem;">
+    Du hast aktuell keine offenen CO₂-Einträge, die noch nicht freigegeben wurden.
+  </p>
+
+
+</div>
+
+<script>
+  document.getElementById('emissionForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const country = document.getElementById('country').value.trim();
+    const year = parseInt(document.getElementById('year').value);
+    const co2kt = parseFloat(document.getElementById('co2kt').value);
+
+    const data = { country, year, co2kt };
+    const feedback = document.getElementById('feedback');
+
+    try {
+      const res = await fetch('/api/emissions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      if (res.ok) {
+        feedback.innerText = "✅ Erfolgreich gespeichert!";
+        feedback.className = "success";
+        document.getElementById('emissionForm').reset();
+        window.location.reload();
+      } else {
+        const errMsg = await res.text();
+        feedback.innerText = "❌ Fehler beim Speichern:\n" + errMsg;
+        feedback.className = "error";
+      }
+    } catch (err) {
+      feedback.innerText = "❌ Netzwerkfehler.";
+      feedback.className = "error";
+      console.error(err);
+    }
+  });
+</script>
+
+</body>
+</html>

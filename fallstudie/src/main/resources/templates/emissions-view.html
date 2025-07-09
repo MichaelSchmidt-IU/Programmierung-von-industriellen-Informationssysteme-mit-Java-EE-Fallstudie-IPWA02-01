@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>CO₂-Datenübersicht – Like Hero To Zero</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --primary: #2c3e50;
+      --accent: #3498db;
+      --background: #f4f6f9;
+      --card: #ffffff;
+      --text: #333;
+      --border-radius: 10px;
+      --error: #e74c3c;
+      --success: #27ae60;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: #1e1e1e;
+        --card: #2c2c2c;
+        --text: #f0f0f0;
+        --primary: #1abc9c;
+        --accent: #3498db;
+      }
+    }
+
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: var(--background);
+      color: var(--text);
+      margin: 0;
+    }
+
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+
+    nav a {
+      color: white;
+      margin-right: 1rem;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .container {
+      padding: 2rem;
+      max-width: 1000px;
+      margin: auto;
+    }
+
+    h2 {
+      margin-bottom: 1rem;
+      color: var(--primary);
+    }
+
+    .chart-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      max-width: 100%;
+    }
+
+    .chart-tabs button {
+      flex: 1 1 auto;
+      min-width: 120px;
+      padding: 0.5rem 1rem;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .chart-container {
+      display: none;
+    }
+
+    .chart-container.active {
+      display: block;
+    }
+
+    canvas {
+      width: 100% !important;
+      height: auto !important;
+      max-height: 400px;
+      display: block;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--card);
+      border-radius: var(--border-radius);
+      overflow: hidden;
+      margin-top: 2rem;
+    }
+
+    th, td {
+      padding: 0.75rem;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+
+    th {
+      background-color: var(--primary);
+      color: white;
+    }
+
+    #status {
+      margin: 1rem 0;
+      font-weight: bold;
+    }
+
+    .success { color: var(--success); }
+    .error { color: var(--error); }
+
+    .footer {
+      margin-top: 2rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: #aaa;
+    }
+
+    .footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    #loadMoreBtn {
+      margin: 1rem auto;
+      display: block;
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    #landDropdown {
+      width: 100%;
+      max-width: 300px;
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      font-weight: 500;
+      background-color: var(--accent);
+      color: #ffffff;
+      border: none;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      appearance: none;
+      margin-bottom: 1rem;
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg viewBox='0 0 140 140' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolygon points='0,40 70,120 140,40' fill='white'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      background-size: 1rem;
+    }
+
+    #landDropdown:hover {
+      background-color: #2d7abf;
+    }
+
+    #landDropdown:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.5);
+    }
+
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🌍 Like Hero To Zero</h1>
+    <nav>
+      <!-- Für alle sichtbar -->
+      <a href="/">🏠 Home</a>
+      <a href="/emissions/view">📊 Daten</a>
+
+      <!-- Für Scientist und Admin -->
+      <span sec:authorize="hasAnyRole('SCIENTIST', 'ADMIN')">
+        <a href="/emissions/form">➕ Eintrag</a>
+        <a href="/emissions/upload">📁 CSV-Import</a>
+        <a href="/aufgabenstellung">📘 Aufgabe</a>
+      </span>
+
+      <!-- Nur Admin -->
+      <a href="/admin/review" sec:authorize="hasRole('ADMIN')">🛡️ Admin: Datenprüfung</a>
+      <a href="/admin/users" sec:authorize="hasRole('ADMIN')">👥 Benutzerverwaltung</a>
+    </nav>
+  </div>
+  <div>
+    <div sec:authorize="isAuthenticated()" class="auth-status">
+      ✅ Eingeloggt als <strong th:text="${#authentication.name}">Username</strong>
+      <a href="/logout">🚪 Logout</a>
+    </div>
+    <div sec:authorize="!isAuthenticated()" class="auth-status">
+      <a href="/login">🔐 Login</a>
+    </div>
+  </div>
+</header>
+
+
+
+<div class="container">
+  <h2>📊 CO₂-Datenübersicht</h2>
+  <p id="status">🔄 Lade CO₂-Daten...</p>
+
+  <div class="chart-tabs">
+    <button class="chart-btn" data-chart="citizenship">🌍 Mein Land</button>
+    <button class="chart-btn" data-chart="bar">📊 Jahre</button>
+    <button class="chart-btn" data-chart="line">📈 Verlauf</button>
+    <button class="chart-btn" data-chart="pie">🧩 Anteile</button>
+    <button class="chart-btn" data-chart="doughnut">🏆 Top 5</button>
+  </div>
+
+  <div class="chart-container active" id="citizenshipChartContainer">
+    <canvas id="citizenshipChart"></canvas>
+  </div>
+
+  <div class="chart-container" id="barChartContainer">
+    <canvas id="barChart"></canvas>
+  </div>
+
+  <div class="chart-container" id="lineChartContainer">
+    <select id="landDropdown"></select>
+    <canvas id="lineChart"></canvas>
+  </div>
+
+  <div class="chart-container" id="pieChartContainer">
+    <select id="jahrDropdown"></select>
+    <canvas id="pieChart"></canvas>
+  </div>
+
+  <div class="chart-container" id="doughnutChartContainer">
+    <canvas id="doughnutChart"></canvas>
+  </div>
+
+  <table id="emissionTable">
+    <thead>
+    <tr>
+      <th>Land</th>
+      <th>Jahr</th>
+      <th>CO₂ in kt</th>
+    </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <button id="loadMoreBtn" style="display: none;">🔽 Weitere anzeigen</button>
+
+  <div class="footer">
+    Quelle: <a href="https://ourworldindata.org/co2-emissions" target="_blank">Our World in Data</a>
+  </div>
+</div>
+
+<script>
+  let rawData = [];
+  let userRoles = [];
+  let citizenshipChartInstance = null;
+  let barChartInstance, lineChartInstance, pieChartInstance, doughnutChartInstance;
+
+  function adjustTabs(roles) {
+    const allowed = ["citizenship"];
+    if (roles.includes("ROLE_ADMIN") || roles.includes("ROLE_SCIENTIST")) {
+      allowed.push("bar", "line", "pie", "doughnut");
+    }
+    document.querySelectorAll(".chart-btn").forEach(btn => {
+      const chart = btn.dataset.chart;
+      btn.style.display = allowed.includes(chart) ? "" : "none";
+    });
+  }
+
+  function adjustChartContainers(roles) {
+    const allowed = ["citizenship"];
+    if (roles.includes("ROLE_ADMIN") || roles.includes("ROLE_SCIENTIST")) {
+      allowed.push("bar", "line", "pie", "doughnut");
+    }
+    ["bar", "line", "pie", "doughnut"].forEach(c => {
+      const el = document.getElementById(`${c}ChartContainer`);
+      if (el) el.style.display = allowed.includes(c) ? "" : "none";
+    });
+  }
+
+  document.querySelectorAll(".chart-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const chart = btn.dataset.chart;
+      document.querySelectorAll(".chart-container").forEach(c => c.classList.remove("active"));
+      document.getElementById(chart + "ChartContainer").classList.add("active");
+      if (chart === "citizenship") showCitizenshipChart();
+      if (chart === "bar") renderBarChart();
+      if (chart === "line") initLandDropdown();
+      if (chart === "pie") initJahrDropdown();
+      if (chart === "doughnut") renderDoughnutChart();
+    });
+  });
+
+  async function showCitizenshipChart() {
+    if (citizenshipChartInstance) citizenshipChartInstance.destroy();
+
+    const res = await fetch("/api/user/me");
+    const user = await res.json();
+    const land = user.citizenship;
+    const filtered = rawData.filter(e => e.country === land).sort((a, b) => a.year - b.year);
+
+    if (!land || filtered.length === 0) {
+      alert(`❌ Keine Daten für ${land || "das Land"}.`);
+      return;
+    }
+
+    citizenshipChartInstance = new Chart(document.getElementById("citizenshipChart"), {
+      type: "line",
+      data: {
+        labels: filtered.map(e => e.year),
+        datasets: [{
+          label: `CO₂ in ${land}`,
+          data: filtered.map(e => e.co2kt),
+          borderColor: "#f39c12",
+          backgroundColor: "rgba(243, 156, 18, 0.1)",
+          fill: true
+        }]
+      }
+    });
+  }
+
+  async function ladeUndVerarbeiteDaten() {
+    const res = await fetch("/api/emissions/all");
+    rawData = await res.json();
+    renderBarChart();
+    initLandDropdown();
+    initJahrDropdown();
+    renderDoughnutChart();
+  }
+
+  function renderBarChart() {
+    if (barChartInstance) barChartInstance.destroy();
+    const map = {};
+    rawData.forEach(e => map[e.year] = (map[e.year] || 0) + e.co2kt);
+    const labels = Object.keys(map).sort();
+    const values = labels.map(y => map[y]);
+    barChartInstance = new Chart(document.getElementById("barChart"), {
+      type: "bar",
+      data: { labels, datasets: [{ label: "CO₂ (kt)", data: values, backgroundColor: "#3498db" }] }
+    });
+  }
+
+  async function initLandDropdown() {
+    const set = [...new Set(rawData.map(e => e.country))].sort();
+    const select = document.getElementById("landDropdown");
+    select.innerHTML = "";
+    set.forEach(l => {
+      const o = document.createElement("option");
+      o.value = o.textContent = l;
+      select.appendChild(o);
+    });
+
+    const res = await fetch("/api/user/me");
+    const user = await res.json();
+    const defaultLand = user.citizenship && set.includes(user.citizenship) ? user.citizenship : set[0];
+    select.value = defaultLand;
+    renderLineChart(defaultLand);
+    select.onchange = () => renderLineChart(select.value);
+  }
+
+  function renderLineChart(land) {
+    if (lineChartInstance) lineChartInstance.destroy();
+    const data = rawData.filter(e => e.country === land).sort((a, b) => a.year - b.year);
+    lineChartInstance = new Chart(document.getElementById("lineChart"), {
+      type: "line",
+      data: {
+        labels: data.map(e => e.year),
+        datasets: [{ label: `CO₂ in ${land}`, data: data.map(e => e.co2kt), borderColor: "#2ecc71", fill: false }]
+      }
+    });
+  }
+
+  function initJahrDropdown() {
+    const set = [...new Set(rawData.map(e => e.year))].sort();
+    const select = document.getElementById("jahrDropdown");
+    select.innerHTML = "";
+    set.forEach(y => {
+      const o = document.createElement("option");
+      o.value = o.textContent = y;
+      select.appendChild(o);
+    });
+    select.onchange = () => renderPieChart(Number(select.value));
+    if (set.length) renderPieChart(Number(set[0]));
+  }
+
+  function renderPieChart(jahr) {
+    if (pieChartInstance) pieChartInstance.destroy();
+    const grouped = {};
+    rawData.filter(e => e.year === jahr).forEach(e => grouped[e.country] = (grouped[e.country] || 0) + e.co2kt);
+    const labels = Object.keys(grouped);
+    const values = Object.values(grouped);
+    pieChartInstance = new Chart(document.getElementById("pieChart"), {
+      type: "pie",
+      data: {
+        labels,
+        datasets: [{
+          label: `CO₂ ${jahr}`,
+          data: values,
+          backgroundColor: labels.map((_, i) => `hsl(${i * 360 / labels.length}, 60%, 60%)`)
+        }]
+      }
+    });
+  }
+
+  function renderDoughnutChart() {
+    if (doughnutChartInstance) doughnutChartInstance.destroy();
+    const grouped = {};
+    rawData.forEach(e => grouped[e.country] = (grouped[e.country] || 0) + e.co2kt);
+    const top5 = Object.entries(grouped).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const labels = top5.map(e => e[0]);
+    const values = top5.map(e => e[1]);
+    doughnutChartInstance = new Chart(document.getElementById("doughnutChart"), {
+      type: "doughnut",
+      data: {
+        labels,
+        datasets: [{
+          label: "Top 5 Länder",
+          data: values,
+          backgroundColor: ["#f39c12", "#e74c3c", "#8e44ad", "#3498db", "#2ecc71"]
+        }]
+      }
+    });
+  }
+
+  async function ladeEmissionen() {
+    const status = document.getElementById("status");
+    const tbody = document.querySelector("#emissionTable tbody");
+    const MAX_ROWS = 20;
+    let visibleCount = MAX_ROWS;
+
+    let citizenship = null;
+    let roles = [];
+
+    try {
+      const res = await fetch("/api/user/me");
+      if (res.ok) {
+        const user = await res.json();
+        citizenship = user.citizenship || null;
+        roles = user.roles || [];
+      }
+    } catch (err) {
+      console.warn("⚠️ Konnte Benutzerinfo nicht abrufen:", err);
+    }
+
+    try {
+      const res = await fetch("/api/emissions/all");
+      const data = await res.json();
+
+      const isSimpleUser = roles.length === 1 && roles.includes("ROLE_USER");
+      const gefiltert = isSimpleUser && citizenship
+        ? data.filter(entry => entry.country === citizenship)
+        : data;
+
+      function renderRows() {
+        tbody.innerHTML = "";
+        gefiltert.slice(0, visibleCount).forEach(entry => {
+          const row = document.createElement("tr");
+          row.innerHTML = `<td>${entry.country}</td><td>${entry.year}</td><td>${entry.co2kt.toLocaleString("de-DE")}</td>`;
+          tbody.appendChild(row);
+        });
+        document.getElementById("loadMoreBtn").style.display = visibleCount < gefiltert.length ? "block" : "none";
+        status.textContent = `✅ ${Math.min(visibleCount, gefiltert.length)} von ${gefiltert.length} Datensätzen geladen.`;
+        status.className = "success";
+      }
+
+      document.getElementById("loadMoreBtn").onclick = () => {
+        visibleCount += MAX_ROWS;
+        renderRows();
+      };
+
+      renderRows();
+    } catch (err) {
+      status.textContent = "❌ Fehler beim Laden.";
+      status.className = "error";
+    }
+  }
+
+  (async () => {
+    try {
+      const res = await fetch("/api/user/me");
+      if (res.ok) {
+        const user = await res.json();
+        userRoles = user.roles || [];
+        adjustTabs(userRoles);
+        adjustChartContainers(userRoles);
+        if (user.citizenship) {
+          await ladeUndVerarbeiteDaten();
+          await showCitizenshipChart();
+          await ladeEmissionen();
+          return;
+        }
+      }
+      adjustTabs([]);
+      adjustChartContainers([]);
+      await ladeUndVerarbeiteDaten();
+      await ladeEmissionen();
+    } catch (err) {
+      console.warn("⚠️ Fehler beim Abrufen der Benutzerinformationen:", err);
+      adjustTabs([]);
+      adjustChartContainers([]);
+      await ladeUndVerarbeiteDaten();
+      await ladeEmissionen();
+    }
+  })();
+</script>
+
+</body>
+</html>
